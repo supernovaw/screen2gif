@@ -23,6 +23,7 @@
     $: selectedFormatName = formatNames[selectedFormat];
     let changeSpeedChecked = false;
     let speedupFactor = 1;
+    let customFrameRate;
 
     let dialogEl;
 
@@ -39,7 +40,7 @@
             : $videoInfo.trimmedDuration
     ).toFixed(2);
 
-    function addSpeedOpts(opts) {
+    function addSpeedAndFpsOpts(opts) {
         if (
             changeSpeedChecked &&
             speedupFactor !== 1 &&
@@ -58,12 +59,28 @@
             if ((i = opts.indexOf("-to")) !== -1)
                 opts[i + 1] = (+opts[i + 1] / speedupFactor).toFixed(4);
         }
+
+        if (
+            changeSpeedChecked &&
+            Math.abs(
+                customFrameRate - $recordedVideo.frameRate * speedupFactor,
+            ) > 0.01 &&
+            isFinite(customFrameRate) &&
+            customFrameRate > 0
+        ) {
+            const vf = "fps=fps=" + customFrameRate;
+
+            let i = opts.indexOf("-vf");
+            if (i === -1) opts.push("-vf", vf);
+            else opts[i + 1] += "," + vf;
+        }
     }
 
     async function convert() {
+        resultUrl = undefined;
         dialogEl.showModal();
         const optsCopy = [...$ffmpegOpts];
-        addSpeedOpts(optsCopy);
+        addSpeedAndFpsOpts(optsCopy);
         try {
             const uint8arr = await encode(
                 optsCopy,
@@ -113,7 +130,7 @@
     <div class="title">Step 3: convert and save</div>
     <div class="speed">
         <label>
-            Change speed
+            Change speed and/or frame rate
             <input
                 name="change-speed"
                 type="checkbox"
@@ -153,6 +170,16 @@
                         per second (instead of
                         {+$recordedVideo.frameRate.toFixed(2)}).
                     {/if}
+                    <br />
+                    Override frame rate:
+                    <input
+                        name="custom-framerate"
+                        type="number"
+                        step="1"
+                        min="1"
+                        max="60"
+                        bind:value={customFrameRate}
+                    />
                 </div>
             </div>
         {/if}
