@@ -57,10 +57,11 @@
 
     async function convert() {
         dialogEl.showModal();
-        addSpeedOpts($ffmpegOpts);
+        const optsCopy = [...$ffmpegOpts];
+        addSpeedOpts(optsCopy);
         try {
             const uint8arr = await encode(
-                $ffmpegOpts,
+                optsCopy,
                 $recordedVideo.blob,
                 selectedFormat,
                 (s) => ($encodingState = s),
