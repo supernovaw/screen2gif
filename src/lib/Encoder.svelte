@@ -41,18 +41,23 @@
 
     function addSpeedOpts(opts) {
         if (
-            !changeSpeedChecked ||
-            speedupFactor === 1 ||
-            !isFinite(speedupFactor) ||
-            speedupFactor <= 0
-        )
-            return;
+            changeSpeedChecked &&
+            speedupFactor !== 1 &&
+            isFinite(speedupFactor) &&
+            speedupFactor > 0
+        ) {
+            const vf = "setpts=PTS/" + speedupFactor;
 
-        const vf = "setpts=PTS/" + speedupFactor;
+            let i = opts.indexOf("-vf");
+            if (i === -1) opts.push("-vf", vf);
+            else opts[i + 1] += "," + vf;
 
-        let i = opts.indexOf("-vf");
-        if (i === -1) opts.push("-vf", vf);
-        else opts[i + 1] += "," + vf;
+            if ((i = opts.indexOf("-ss")) !== -1)
+                opts[i + 1] = (+opts[i + 1] / speedupFactor).toFixed(4);
+
+            if ((i = opts.indexOf("-to")) !== -1)
+                opts[i + 1] = (+opts[i + 1] / speedupFactor).toFixed(4);
+        }
     }
 
     async function convert() {
