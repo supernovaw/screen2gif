@@ -32,6 +32,8 @@
     {/if}
 </main>
 
+<img id="cats" alt="" src="./cats.webp" />
+
 <style>
     main {
         max-width: 800px;
@@ -43,5 +45,15 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
+    }
+
+    img {
+        width: 25svh;
+        aspect-ratio: 1973 / 1043;
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        transform: translate(10%, 30%) rotate(-25deg);
+        pointer-events: none;
     }
 </style>
