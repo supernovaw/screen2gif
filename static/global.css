@@ -1,0 +1,53 @@
+html {
+    color-scheme: dark;
+    font-family: "SF Pro Display", "SF Pro Text", -apple-system, "Cantarell", "Roboto", "Segoe UI", sans-serif;
+}
+
+body {
+    overflow-x: hidden;
+    margin: 0;
+}
+
+button {
+    font: inherit;
+    color: white;
+    background-color: #222;
+    border: 2px solid #666;
+    padding: 0.4em 0.6em;
+    border-radius: 0.5em;
+    cursor: pointer;
+    transition: background-color 0.1s ease-out, color 0.1s ease-out;
+    user-select: none;
+}
+
+button:hover {
+    background-color: #272727;
+}
+
+button:active {
+    color: #ccc;
+}
+
+label,
+input[type="checkbox"] {
+    cursor: pointer;
+    user-select: none;
+}
+
+input {
+    font: inherit;
+    color: white;
+    background-color: #171717;
+    border: 2px solid #666;
+    border-radius: 0.3em;
+}
+
+select {
+    font: inherit;
+    color: white;
+    background-color: #222;
+    border: 2px solid #666;
+    border-radius: 0.35em;
+    cursor: pointer;
+    user-select: none;
+}
