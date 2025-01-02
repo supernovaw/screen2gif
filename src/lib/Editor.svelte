@@ -1,3 +1,16 @@
+<script module>
+    import { writable } from "svelte/store";
+
+    const persistentStore = writable({
+        cropMode: false,
+        crop: { x: 0, y: 0, w: 1, h: 1 },
+        trimStartFraction: 0,
+        trimEndFraction: 1,
+        videoDuration: undefined,
+        resumePlayback: 0,
+    });
+</script>
+
 <script>
     // writable({ url: string, size: number, frameRate: number, preliminaryDuration: number, blob: Blob })
     export let recordedVideo;
@@ -9,39 +22,38 @@
     const minAllowedCropFraction = 0.01; // 1% the width/height of video
     const minAllowedTrimTime = 0.05; // 50ms
 
+    $persistentStore.videoDuration ||= $recordedVideo.preliminaryDuration;
+    let duration = $persistentStore.videoDuration;
+    $: duration = $persistentStore.videoDuration;
+    $: videoInfoString = formatVideoInfo($recordedVideo.frameRate, duration);
+
     let videoEl;
-    let videoDuration = $recordedVideo.preliminaryDuration;
-    $: videoInfoString = formatVideoInfo(
-        $recordedVideo.frameRate,
-        videoDuration,
-    );
+    let currentTime = $persistentStore.resumePlayback;
+    let paused = !!currentTime;
 
-    let currentTime = 0;
-    let paused = false;
-
-    let cropMode = false;
-    let cropX = 0,
-        cropY = 0,
-        cropW = 1,
-        cropH = 1; // all within [0..1]
+    let cropX = $persistentStore.crop.x,
+        cropY = $persistentStore.crop.y,
+        cropW = $persistentStore.crop.w,
+        cropH = $persistentStore.crop.h; // all within [0..1]
     let draggedCropAnchor; // tl|tr|bl|br|center
     let anchorDragStartPageX, anchorDragStartPageY; // in px
     let anchorDragStartVideoX,
         anchorDragStartVideoY,
         anchorDragStartVideoW,
         anchorDragStartVideoH; // in fractions ([0..1])
-    let noEffectiveCrop = true;
+    let noEffectiveCrop =
+        cropX === 0 && cropY === 0 && cropW === 1 && cropH === 1;
 
-    let trimStart = 0,
-        trimEnd = videoDuration;
-    $: trimStartFraction = trimStart / videoDuration;
-    $: trimEndFraction = trimEnd / videoDuration;
+    let trimStart = $persistentStore.trimStartFraction * duration,
+        trimEnd = $persistentStore.trimEndFraction * duration;
+    $: $persistentStore.trimStartFraction = trimStart / duration;
+    $: $persistentStore.trimEndFraction = trimEnd / duration;
 
     function onDurationChange() {
         if (!isFinite(videoEl.duration)) return;
-        const updateTrimEnd = trimEnd === videoDuration;
-        videoDuration = videoEl.duration;
-        if (updateTrimEnd) trimEnd = videoDuration;
+        const updateTrimEnd = trimEnd === duration;
+        duration = $persistentStore.duration = videoEl.duration;
+        if (updateTrimEnd) trimEnd = duration;
     }
 
     function formatVideoInfo(fps, duration) {
@@ -130,6 +142,8 @@
 
         noEffectiveCrop =
             cropX === 0 && cropY === 0 && cropW === 1 && cropH === 1;
+
+        $persistentStore.crop = { x: cropX, y: cropY, w: cropW, h: cropH };
     }
 
     function onCropAnchorMouseUp(e) {
@@ -147,7 +161,7 @@
 
     function setTrimStart() {
         trimStart = currentTime;
-        if (trimStart > trimEnd - minAllowedTrimTime) trimEnd = videoDuration;
+        if (trimStart > trimEnd - minAllowedTrimTime) trimEnd = duration;
     }
 
     function setTrimEnd() {
@@ -172,11 +186,13 @@
         }
 
         if (trimStart > 0) opts.push("-ss", trimStart.toFixed(4));
-        if (trimEnd < videoDuration) opts.push("-to", trimEnd.toFixed(4));
+        if (trimEnd < duration) opts.push("-to", trimEnd.toFixed(4));
         const trimmedDuration = trimEnd - trimStart;
 
         $ffmpegOpts = opts;
         $videoInfo = { trimmedDuration };
+
+        $persistentStore.resumePlayback = videoEl.currentTime;
     }
 </script>
 
@@ -198,7 +214,11 @@
     <p>{videoInfoString}</p>
     <p>
         <label>
-            <input name="crop-mode" type="checkbox" bind:checked={cropMode} />
+            <input
+                name="crop-mode"
+                type="checkbox"
+                bind:checked={$persistentStore.cropMode}
+            />
             Crop Mode
         </label>
     </p>
@@ -206,7 +226,6 @@
     <div class="video-container">
         <!-- svelte-ignore a11y_media_has_caption -->
         <video
-            autoplay
             controls
             loop
             bind:currentTime
@@ -218,7 +237,7 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
             class="crop-interface-container"
-            class:crop-mode-enabled={cropMode}
+            class:crop-mode-enabled={$persistentStore.cropMode}
             on:mousedown={onCropAnchorMouseDown}
             style:--crop-x="{cropX * 100}%"
             style:--crop-y="{cropY * 100}%"
@@ -235,7 +254,7 @@
         </div>
     </div>
     <div class="time-indicator">
-        {currentTime.toFixed(2)}s / {videoDuration.toFixed(2)}s
+        {currentTime.toFixed(2)}s / {duration.toFixed(2)}s
     </div>
     <div class="seek-controls">
         <button on:click={() => seek(-1)}>◀<br />1 second</button>
@@ -248,9 +267,9 @@
     </div>
     <div
         class="trim-controls"
-        style:--trim-start="{trimStartFraction * 100}%"
-        style:--trim-end="{trimEndFraction * 100}%"
-        style:--current-time="{(currentTime / videoDuration) * 100}%"
+        style:--trim-start="{$persistentStore.trimStartFraction * 100}%"
+        style:--trim-end="{$persistentStore.trimEndFraction * 100}%"
+        style:--current-time="{(currentTime / duration) * 100}%"
     >
         <button on:click={setTrimStart}>Set Trim Start</button>
         <button on:click={setTrimEnd}>Set Trim End</button>
@@ -258,7 +277,7 @@
             Trim: from {trimStart.toFixed(2)}s until {trimEnd.toFixed(2)}s
             <br />
             Trimmed length: {(trimEnd - trimStart).toFixed(2)}s (original
-            length: {videoDuration.toFixed(2)}s)
+            length: {duration.toFixed(2)}s)
         </div>
     </div>
     <button class="confirm" on:click={confirmCropAndTrim}>
