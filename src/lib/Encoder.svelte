@@ -275,7 +275,6 @@
         outline: none;
         background: linear-gradient(60deg, #4447, #37373777, #3337, #2227);
         background-color: #333a;
-        margin-block: 2em;
         max-width: 70%;
         box-sizing: border-box;
         padding: 2em;
