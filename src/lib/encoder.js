@@ -8,6 +8,7 @@ let ffmpegState = "unloaded"; // unloaded|loading|running|standby
 let ffmpeg;
 let ffmpegLoadPromise;
 let reportProgress;
+let expectedDuration;
 let stderrLog;
 
 async function toBlobURL(url, mimeType) {
@@ -47,6 +48,21 @@ const wasmSegments = [
     base + "/ffmpeg/ffmpeg-core_seg7.wasm",
 ];
 
+function stderrLogHandler(message) {
+    stderrLog.push(message);
+    let m = message.match(/^frame=.* time=(\d\d):(\d\d):(\d\d)\.(\d\d) /);
+    if (reportProgress && m) {
+        const hr = +m[1] * 3600;
+        const min = +m[2] * 60;
+        const sec = +m[3];
+        const frac = +m[4] / 100;
+        const totalSec = hr + min + sec + frac;
+        const progress = totalSec / expectedDuration;
+        if (progress >= 0 && progress <= 1)
+            reportProgress(progress);
+    }
+}
+
 export async function loadFfmpeg() {
     let resolve, reject;
     ffmpegLoadPromise = new Promise((res, rej) => {
@@ -59,11 +75,7 @@ export async function loadFfmpeg() {
         ffmpegState = "loading";
 
         ffmpeg = new FFmpeg();
-        ffmpeg.on("log", ({ message }) => stderrLog.push(message));
-        ffmpeg.on("progress", ({ progress }) => {
-            if (progress <= 0 || progress >= 1 || typeof reportProgress !== "function") return;
-            reportProgress(progress);
-        });
+        ffmpeg.on("log", ({ message }) => stderrLogHandler(message));
         await ffmpeg.load({
             coreURL: await toBlobURL(base + "/ffmpeg/ffmpeg-core.js", "text/javascript"),
             wasmURL: await segmentedToBlobURL(wasmSegments, "application/wasm"),
@@ -72,16 +84,18 @@ export async function loadFfmpeg() {
         });
         ffmpegState = "standby";
         resolve();
-    } catch {
+    } catch (e) {
+        reportError?.(String(e));
         reject();
     }
 }
 
-export async function encode(ffmpegOpts, blob, format, reportStateCallback, reportProgressCallback) {
+export async function encode(ffmpegOpts, blob, format, reportStateCallback, reportProgressCallback, expectedDur) {
     const dstFilename = "result." + format;
     const command = ["-i", srcFilename, ...ffmpegOpts, dstFilename];
     stderrLog = ["// ffmpeg " + command.join(" ")];
 
+    expectedDuration = expectedDur;
     reportProgress = reportProgressCallback;
     reportProgressCallback(0);
     if (ffmpegState === "unloaded") {
@@ -105,6 +119,10 @@ export async function encode(ffmpegOpts, blob, format, reportStateCallback, repo
         reportStateCallback("success");
         reportProgressCallback(1);
         return result;
+    } catch (e) {
+        if (e.message?.startsWith("ffmpeg is not loaded,"))
+            loadFfmpeg();
+        throw e;
     } finally {
         if (stderrLog.at(-1)?.match(/^Aborted\(.+\)/))
             throw new Error(stderrLog.at(-1));

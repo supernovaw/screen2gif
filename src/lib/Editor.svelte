@@ -273,7 +273,7 @@
         padding: 1em;
         border-radius: 1em;
         text-align: center;
-        width: 800px;
+        width: 600px;
         max-width: calc(95vw - 4em);
     }
 

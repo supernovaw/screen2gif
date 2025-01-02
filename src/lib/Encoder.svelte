@@ -88,6 +88,7 @@
                 selectedFormat,
                 (s) => ($encodingState = s),
                 (p) => ($progress = p),
+                $videoInfo.trimmedDuration / speedupFactor,
             );
             resultUrl = URL.createObjectURL(
                 new Blob([uint8arr.buffer], {
