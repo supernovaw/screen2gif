@@ -19,9 +19,13 @@ export function determineVideoContainer() {
      * the <video> player fails to indicate the duration (and only shows current time)
      * until the video almost finishes playing. This prevents seeking from working
      * properly at first and is annoying. Therefore, on Chromium, use mp4.
+     * 
+     * Safari: only mp4 is supported
      *
      * Firefox(-based): only webm is supported, and the above issue doesn't happen. */
 
+    if (window.safari)
+        return "mp4";
     if (window.navigator.userAgent.includes(" Chrome/"))
         return "mp4";
     return "webm";

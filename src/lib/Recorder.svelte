@@ -35,7 +35,7 @@
         recorder.start();
         isRecording = true;
         isPaused = false;
-        stop = () => stream.getTracks().forEach((s) => s.stop());
+        stop = () => recorder.requestData();
         const { frameRate } = stream.getVideoTracks()[0].getSettings();
         recordTime = +new Date();
 
