@@ -1,8 +1,11 @@
 <script>
     import { slide } from "svelte/transition";
     import Ellipsis from "./Ellipsis.svelte";
-    import { cancel, encode, getStderrLog } from "./encoder";
+    import { cancel, encode, getStderrLog, loadFfmpeg } from "./encoder";
     import { writable } from "svelte/store";
+    import { onMount } from "svelte";
+
+    onMount(loadFfmpeg);
 
     const formatNames = { gif: "GIF", mp4: "MP4", mkv: "MKV", webm: "WebM" };
     const formatTypes = {
@@ -122,8 +125,8 @@
 
 <svelte:window
     on:keypress={(e) => {
-        if (e.code === "KeyL" && e.ctrlKey && e.shiftKey)
-            shownStderrLog = getStderrLog();
+        if (e.code === "KeyL")
+            shownStderrLog = "Note: you pressed L. This reveals the encoding log below:\n\n" + getStderrLog();
     }}
 />
 

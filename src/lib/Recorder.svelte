@@ -1,7 +1,7 @@
 <script>
     import { tick } from "svelte";
     import { fade } from "svelte/transition";
-    import { loadFfmpeg, mimeType } from "./encoder";
+    import { mimeType } from "./encoder";
 
     // writable({ url: string, size: number, frameRate: number, preliminaryDuration: number, blob: Blob })
     export let recordedVideo;
@@ -22,8 +22,6 @@
     let stopwatchString = "";
 
     function shareScreen() {
-        loadFfmpeg(); // load early since it takes a long time
-
         if (isRecording) return;
         recordingError = undefined;
         window.navigator.mediaDevices
