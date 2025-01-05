@@ -1,9 +1,6 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { base } from "$app/paths";
 
-export const mimeType = "video/mp4";
-const srcFilename = "recording.mp4";
-
 let ffmpegState = "unloaded"; // unloaded|loading|running|standby
 let ffmpeg;
 let ffmpegLoadPromise;
@@ -15,6 +12,19 @@ async function toBlobURL(url, mimeType) {
     const buf = await (await fetch(url)).arrayBuffer();
     const blob = new Blob([buf], { type: mimeType });
     return URL.createObjectURL(blob);
+}
+
+export function determineVideoContainer() {
+    /* Chromium(-based): both mp4 and webm are supported, however, when using webm,
+     * the <video> player fails to indicate the duration (and only shows current time)
+     * until the video almost finishes playing. This prevents seeking from working
+     * properly at first and is annoying. Therefore, on Chromium, use mp4.
+     *
+     * Firefox(-based): only webm is supported, and the above issue doesn't happen. */
+
+    if (window.navigator.userAgent.includes(" Chrome/"))
+        return "mp4";
+    return "webm";
 }
 
 // Because the 30+ MB file `ffmpeg-core.wasm` doesn't get cached,
@@ -91,6 +101,7 @@ export async function loadFfmpeg() {
 }
 
 export async function encode(ffmpegOpts, blob, format, reportStateCallback, reportProgressCallback, expectedDur) {
+    const srcFilename = "recording." + determineVideoContainer();
     const dstFilename = "result." + format;
     const command = ["-i", srcFilename, ...ffmpegOpts, dstFilename];
     stderrLog = ["// ffmpeg " + command.join(" ")];
@@ -111,6 +122,10 @@ export async function encode(ffmpegOpts, blob, format, reportStateCallback, repo
 
     try {
         ffmpegState = "running";
+
+        // just in case
+        await ffmpeg.deleteFile(srcFilename).catch(() => { });
+        await ffmpeg.deleteFile(dstFilename).catch(() => { });
 
         ffmpeg.writeFile(srcFilename, new Uint8Array(await blob.arrayBuffer()));
         await ffmpeg.exec(command);
@@ -137,5 +152,5 @@ export function cancel() {
 }
 
 export function getStderrLog() {
-    return stderrLog.join("\n");
+    return stderrLog?.join("\n") ?? "<empty>";
 }

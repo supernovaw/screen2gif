@@ -1,12 +1,10 @@
 <script>
     import { tick } from "svelte";
     import { fade } from "svelte/transition";
-    import { mimeType } from "./encoder";
+    import { determineVideoContainer } from "./encoder";
 
     // writable({ url: string, size: number, frameRate: number, preliminaryDuration: number, blob: Blob })
     export let recordedVideo;
-
-    const recOpts = { mimeType };
 
     let isRecording;
     let recordingError;
@@ -31,7 +29,9 @@
     }
 
     function recordScreen(stream) {
-        const recorder = new MediaRecorder(stream, recOpts);
+        const recorder = new MediaRecorder(stream, {
+            mimeType: "video/" + determineVideoContainer(),
+        });
         recorder.start();
         isRecording = true;
         isPaused = false;
