@@ -7,7 +7,6 @@
         crop: { x: 0, y: 0, w: 1, h: 1 },
         trimStartFraction: 0,
         trimEndFraction: 1,
-        videoDuration: undefined,
         resumePlayback: 0,
     });
 </script>
@@ -17,15 +16,13 @@
     export let recordedVideo;
     // writable(string[])
     export let ffmpegOpts;
-    // { trimmedDuration: number }
+    // writable({ trimmedDuration: number })
     export let videoInfo;
 
     const minAllowedCropFraction = 0.01; // 1% the width/height of video
     const minAllowedTrimTime = 0.05; // 50ms
 
-    $persistentStore.videoDuration ||= $recordedVideo.preliminaryDuration;
-    let duration = $persistentStore.videoDuration;
-    $: duration = $persistentStore.videoDuration;
+    let duration = $recordedVideo.preliminaryDuration;
     $: videoInfoString = formatVideoInfo($recordedVideo.frameRate, duration);
 
     let videoEl;
@@ -51,10 +48,13 @@
     $: $persistentStore.trimEndFraction = trimEnd / duration;
 
     function onDurationChange() {
-        if (!isFinite(videoEl.duration)) return;
-        const updateTrimEnd = trimEnd === duration;
-        duration = $persistentStore.duration = videoEl.duration;
-        if (updateTrimEnd) trimEnd = duration;
+        const newDuration = videoEl.duration;
+        if (!isFinite(newDuration) || newDuration === duration) return;
+
+        if (duration === trimEnd) trimEnd = newDuration;
+        duration = newDuration;
+        $persistentStore.duration = newDuration;
+        $recordedVideo.preliminaryDuration = newDuration;
     }
 
     function formatVideoInfo(fps, duration) {

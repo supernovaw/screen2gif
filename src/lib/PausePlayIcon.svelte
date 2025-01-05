@@ -29,10 +29,10 @@
     }
 
     div.paused:before {
-        clip-path: polygon(0 0, 50% 25%, 50% 75%, 0 100%);
+        clip-path: polygon(0 0, 52% 26%, 52% 74%, 0 100%);
     }
 
     div.paused:after {
-        clip-path: polygon(50% 25%, 100% 50%, 100% 50%, 50% 75%);
+        clip-path: polygon(48% 24%, 100% 50%, 100% 50%, 48% 76%);
     }
 </style>
