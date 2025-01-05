@@ -35,7 +35,10 @@
         recorder.start();
         isRecording = true;
         isPaused = false;
-        stop = () => recorder.requestData();
+        stop = () => {
+            if (window.safari) recorder.requestData();
+            stream.getTracks().forEach((s) => s.stop());
+        };
         const { frameRate } = stream.getVideoTracks()[0].getSettings();
         recordTime = +new Date();
 

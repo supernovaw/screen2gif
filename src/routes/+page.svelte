@@ -32,7 +32,7 @@
     {/if}
 </main>
 
-<img id="cats" alt="" src="./cats.webp" />
+<img id="cats" alt="" src="./cats.webp" draggable="false" />
 
 <style>
     main {
