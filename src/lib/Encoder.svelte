@@ -35,6 +35,10 @@
     let resultUrl;
     let errorMessage;
     let shownStderrLog;
+    $: fpsNote =
+        (customFrameRate ?? $recordedVideo.frameRate * speedupFactor) > 30
+            ? "Note that it might be that with a high frame rate (>30), your GIF will not play back well."
+            : "";
 
     $: videoDur = $videoInfo.trimmedDuration.toFixed(2);
     $: videoDurNew = (
@@ -42,6 +46,22 @@
             ? $videoInfo.trimmedDuration / speedupFactor
             : $videoInfo.trimmedDuration
     ).toFixed(2);
+
+    $: onSpeedupFactorChange(speedupFactor);
+    function onSpeedupFactorChange(f) {
+        // cap the FPS, as high-FPS GIF's don't behave well
+        if (typeof f !== "number" || !isFinite(f)) return;
+
+        if (f > 1) {
+            if (!customFrameRate) {
+                customFrameRate = $recordedVideo.frameRate;
+                fpsNote = undefined;
+            }
+        } else if (f <= 1) {
+            if (customFrameRate === $recordedVideo.frameRate)
+                customFrameRate = undefined;
+        }
+    }
 
     function addSpeedAndFpsOpts(opts) {
         if (
@@ -126,7 +146,9 @@
 <svelte:window
     on:keypress={(e) => {
         if (e.code === "KeyL")
-            shownStderrLog = "Note: you pressed L. This reveals the encoding log below:\n\n" + getStderrLog();
+            shownStderrLog =
+                "Note: you pressed L. This reveals the encoding log below:\n\n" +
+                getStderrLog();
     }}
 />
 
@@ -146,7 +168,7 @@
                 <label
                     title="To slow the video down, specify a number less than 1 (e.g. 0.8)"
                 >
-                    Speed up by a factor of <input
+                    Speed up by a factor of: <input
                         style="width: 4em"
                         type="number"
                         min="0.1"
@@ -161,7 +183,8 @@
                         The length is {videoDur}s.
                     {:else}
                         The length will be
-                        {speedupFactor > 1 ? "contracted" : "extended"} to {videoDurNew}s
+                        {speedupFactor > 1 ? "contracted" : "extended"} to
+                        <b>{videoDurNew}s</b>
                         (from {videoDur}s).
                     {/if}
                 </div>
@@ -175,15 +198,26 @@
                         {+$recordedVideo.frameRate.toFixed(2)}).
                     {/if}
                     <br />
-                    Override frame rate:
-                    <input
-                        name="custom-framerate"
-                        type="number"
-                        step="1"
-                        min="1"
-                        max="60"
-                        bind:value={customFrameRate}
-                    />
+                    <label>
+                        Override frame rate:
+                        <input
+                            name="custom-framerate"
+                            type="number"
+                            step="1"
+                            min="1"
+                            max="60"
+                            bind:value={customFrameRate}
+                        />
+                    </label>
+                    {#if fpsNote}
+                        <div
+                            in:slide={{ duration: 300 }}
+                            out:slide={{ duration: 300 }}
+                            style="color: orange"
+                        >
+                            {fpsNote}
+                        </div>
+                    {/if}
                 </div>
             </div>
         {/if}
