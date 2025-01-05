@@ -47,7 +47,7 @@
         justify-content: center;
     }
 
-    img {
+    #cats {
         width: 25svh;
         aspect-ratio: 1973 / 1043;
         position: fixed;
@@ -55,5 +55,7 @@
         bottom: 0;
         transform: translate(10%, 30%) rotate(-25deg);
         pointer-events: none;
+        user-select: none;
+        z-index: -1;
     }
 </style>

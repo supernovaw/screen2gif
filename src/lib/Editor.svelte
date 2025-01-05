@@ -1,5 +1,6 @@
 <script module>
     import { writable } from "svelte/store";
+    import PausePlayIcon from "./PausePlayIcon.svelte";
 
     const persistentStore = writable({
         cropMode: false,
@@ -259,8 +260,12 @@
     <div class="seek-controls">
         <button on:click={() => seek(-1)}>◀<br />1 second</button>
         <button on:click={() => seekf(-1)}>◀<br />1 frame</button>
-        <button on:click={() => (paused = !paused)} class="pause-play">
-            {paused ? "⏵" : "⏸"}
+        <button
+            on:click={() => (paused = !paused)}
+            class="pause-play"
+            aria-label={paused ? "Play" : "Pause"}
+        >
+            <PausePlayIcon {paused} />
         </button>
         <button on:click={() => seekf(1)}>▶<br />1 frame</button>
         <button on:click={() => seek(1)}>▶<br />1 second</button>
@@ -420,10 +425,9 @@
     }
 
     .seek-controls .pause-play {
-        font-size: 150%;
-        border-radius: calc(0.4em / 1.5);
-        padding-inline: 0.5em;
-        padding-block: 0 0.2em;
+        font-size: 120%;
+        border-radius: calc(0.4em / 1.2);
+        padding: 0 0.7em;
     }
 
     .trim-controls {
